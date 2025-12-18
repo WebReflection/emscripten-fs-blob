@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>PyScript 2025.11.2</title>
+        <link rel="stylesheet" href="https://pyscript.net/releases/2025.11.2/core.css" />
+        <script type="module">
+          // import IDBMap from 'https://esm.run/@webreflection/idb-map';
+          // const idbMap = new IDBMap('fs.json');
+
+          import { hooks } from 'https://pyscript.net/releases/2025.11.2/core.js';
+
+          import { fromBlob, toBlob, compress, decompress } from '../src/index.js';
+
+          const asBlob = async file => {
+            // IS THIS THE FASTEST WAY ???
+            const blob = await fetch(file).then(res => res.blob());
+            return file.endsWith('.gz') ? decompress(blob) : blob;
+
+            // // THIS IS DIRECT BUT WAY SLOWER THAN THE FIRST ONE !?!
+            // const res = await fetch(file);
+            // return file.endsWith('.gz') ? decompress(res) : res.blob();
+          };
+
+          console.time('hooks.main.onReady');
+          hooks.main.onReady.add(async (wrap, element) => {
+            console.timeEnd('hooks.main.onReady');
+
+            const { interpreter: { FS }, type } = wrap;
+
+            console.time('fetching & decompressing FS as Blob');
+            const blob = await asBlob('./fs.gz');
+            console.timeEnd('fetching & decompressing FS as Blob');
+            console.log(blob);
+
+            console.time(`${type} - restoring FS from Blob`);
+            await fromBlob(FS, '/', blob);
+            console.timeEnd(`${type} - restoring FS from Blob`);
+
+            setTimeout(async () => {
+              console.time(`${type} - creating Blob from FS`);
+              const blob = toBlob(FS, '/');
+              console.timeEnd(`${type} - creating Blob from FS`);
+              console.log(blob);
+
+              console.time(`${type} - compressing Blob`);
+              const compressed = await compress(blob);
+              console.timeEnd(`${type} - compressing Blob`);
+              console.log(compressed);
+            }, 5000);
+
+            // console.time(`${type} - IndexDB save`);
+            // await idbMap.set('root', root);
+            // console.timeEnd(`${type} - IndexDB save`);
+
+            // const b = new Blob([compressed], { type: 'application/gzip' });
+            // const url = URL.createObjectURL(b);
+            // const a = document.createElement('a');
+            // a.href = url;
+            // a.download = 'fs.gz';
+            // a.click();
+
+            // console.time(`${type} - IndexDB get`);
+            // const root = await idbMap.get('root');
+            // console.timeEnd(`${type} - IndexDB get`);
+
+            // console.time(`${type} - restoreFileSystem`);
+            // restoreFileSystem(FS, root);
+            // console.timeEnd(`${type} - restoreFileSystem`);
+          });
+
+        </script>
+    </head>
+    <body>
+      <!-- needed only the first time ... then it can be omitted -->
+      <!-- <py-config>
+        packages = ['matplotlib']
+      </py-config> -->
+      <script type="py">
+        import matplotlib
+        from pyscript import document
+
+        document.body.append("Hello Pyodide!")
+      </script>
+    </body>
+</html>
