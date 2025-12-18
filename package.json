@@ -1,0 +1,38 @@
+{
+  "name": "emscripten-fs-blob",
+  "version": "0.0.0",
+  "description": "Emscripten FS as sharable and recoverable Blob",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./from": "./src/from.js",
+    "./to": "./src/to.js"
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "emscripten",
+    "fs",
+    "blob",
+    "compress",
+    "binary"
+  ],
+  "author": "Andrea Giammarchi",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WebReflection/emscripten-fs-blob.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WebReflection/emscripten-fs-blob/issues"
+  },
+  "homepage": "https://github.com/WebReflection/emscripten-fs-blob#readme"
+}

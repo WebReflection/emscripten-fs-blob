@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>PyScript 2025.11.2</title>
+        <link rel="stylesheet" href="https://pyscript.net/releases/2025.11.2/core.css" />
+        <script type="module">
+import IDBMap from 'https://esm.run/@webreflection/idb-map';
+import WebCompressor from 'https://esm.run/web-compressor';
+import { hooks } from 'https://pyscript.net/releases/2025.11.2/core.js';
+
+import { fromBlob, toBlob, compress, decompress } from './src/index.js';
+
+const idbMap = new IDBMap('fs.json');
+
+const transform = (stream, type) => stream.pipeThrough(new DecompressionStream(type));
+
+const asBlob = async file => {
+  // FASTEST ???
+  const blob = await fetch(file).then(res => res.blob());
+  return file.endsWith('.gz') ? decompress(blob) : blob;
+
+  // // TOO SLOW ???
+  // const res = await fetch(file);
+  // return file.endsWith('.gz') ? decompress(res) : res.blob();
+};
+
+console.time('hooks.main.onReady');
+hooks.main.onReady.add(async (wrap, element) => {
+  console.timeEnd('hooks.main.onReady');
+
+  console.time('fetch & decompress FS');
+  const blob = await asBlob('fs.gz');
+  console.timeEnd('fetch & decompress FS');
+  console.log(blob);
+
+  // console.time('decompress');
+  // const root = await decompress(gz);
+  // console.timeEnd('decompress');
+
+  // console.log(root);
+
+  const { interpreter: { FS }, type } = wrap;
+
+  // console.time(`${type} - freezeFileSystem`);
+  // const root_json = freezeFileSystem(FS);
+  // console.timeEnd(`${type} - freezeFileSystem`);
+
+  // console.time('fetch & restore FS');
+  // await fetch('fs.bin').then(res => res.blob()).then(blob => fromBlob(FS, '/', blob));
+  // console.timeEnd('fetch & restore FS');
+
+  // console.time('fetch fs.bin');
+  // const blob = await fetch('fs.bin').then(res => res.blob());
+  // console.timeEnd('fetch fs.bin');
+
+  console.time(`${type} - fromBlob`);
+  await fromBlob(FS, '/', blob);
+  console.timeEnd(`${type} - fromBlob`);
+
+  // console.time(`${type} - IndexDB save`);
+  // await idbMap.set('root', root);
+  // console.timeEnd(`${type} - IndexDB save`);
+
+  // console.time(`${type} - toBlob`);
+  // const blob = toBlob(FS, '/');
+  // console.timeEnd(`${type} - toBlob`);
+  // console.log(blob);
+
+  console.time(`${type} - compress`);
+  const compressed = await compress(blob);
+  console.timeEnd(`${type} - compress`);
+  console.log(compressed);
+
+  // const b = new Blob([compressed], { type: 'application/gzip' });
+  // const url = URL.createObjectURL(b);
+  // const a = document.createElement('a');
+  // a.href = url;
+  // a.download = 'fs.gz';
+  // a.click();
+
+  // console.time(`${type} - IndexDB get`);
+  // const root = await idbMap.get('root');
+  // console.timeEnd(`${type} - IndexDB get`);
+
+  // console.time(`${type} - restoreFileSystem`);
+  // restoreFileSystem(FS, root);
+  // console.timeEnd(`${type} - restoreFileSystem`);
+});
+
+function asNode({ mode, mtime }, data) {
+  return { mode, mtime, data };
+}
+
+function freezeDirectory(FS, path) {
+  const entries = FS.readdir(path);
+  const result = {};
+  for (const entry of entries) {
+    if (entry === '.' || entry === '..') continue;
+    const fullPath = path === '/' ? '/' + entry : path + '/' + entry;
+    try {
+      const stat = FS.stat(fullPath);
+      if (FS.isDir(stat.mode)) {
+        console.log('DIR', entry, fullPath);
+        // Directory: recursively freeze its contents.
+        result[entry] = asNode(stat, freezeDirectory(FS, fullPath));
+      }
+      else if (FS.isFile(stat.mode)) {
+        console.log('FIL', entry, fullPath);
+        const data = FS.readFile(fullPath, { encoding: 'binary' });
+        // TODO: the [...array] conversion *might* not be necessary,
+        //       although this way it works as JSON too.
+        result[entry] = asNode(stat, [...data]);
+      }
+      else if (FS.isLink(stat.mode)) {
+        console.log('LNK', entry, fullPath);
+        result[entry] = asNode(stat, FS.readlink(fullPath));
+      }
+    }
+    catch (e) {
+      // Log stuff that can't be accessed.
+      console.warn(`Skipping ${fullPath}: ${e.message ?? e.name}`);
+    }
+  }
+  return result;
+}
+
+function freezeFileSystem(FS) {
+  return freezeDirectory(FS, '/');
+}
+
+function restoreDirectory(FS, path, frozen) {
+  for (const [name, node] of Object.entries(frozen)) {
+    const fullPath = path === '/' ? '/' + name : path + '/' + name;
+    if (FS.isDir(node.mode)) {
+      try {
+        FS.mkdir(fullPath);
+      } catch (e) {
+        // Directory already exists, just ignore.
+      }
+      restoreDirectory(FS, fullPath, node.data);
+    }
+    else if (FS.isFile(node.mode)) {
+      FS.writeFile(fullPath, Uint8Array.from(node.data));
+      FS.chmod(fullPath, node.mode);
+    }
+    else if (FS.isLink(node.mode)) {
+      FS.symlink(node.data, fullPath);
+    }
+  }
+}
+
+function restoreFileSystem(FS, frozen) {
+  return restoreDirectory(FS, '/', frozen);
+}
+
+        </script>
+    </head>
+    <body>
+      <!-- <py-config>
+        packages = ['matplotlib']
+      </py-config> -->
+      <script type="py">
+        import matplotlib
+        from pyscript import document
+
+        document.body.append("Hello Pyodide!")
+      </script>
+    </body>
+</html>
