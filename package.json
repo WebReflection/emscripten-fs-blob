@@ -1,6 +1,6 @@
 {
   "name": "emscripten-fs-blob",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Emscripten FS as sharable and recoverable Blob",
   "main": "src/index.js",
   "module": "src/index.js",
