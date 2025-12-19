@@ -1,41 +1,33 @@
-import { DIR, FILE, LINK, dv, type, ui8a } from './shared.js';
+import { DIR, FILE, LINK, INT_SIZE, type, fromNumber } from './shared.js';
+
+const DATE_SIZE = 24; // (new Date()).toISOString().length;
+const USE_MTIME = false;
 
 const { fromCharCode } = String;
 const decoder = new TextDecoder;
 
-const fromDate = value => {
-  return new Date(fromCharCode(...value));
-};
+const fromDate = (value, i) => new Date(
+  fromCharCode.apply(null, value.subarray(i, i + DATE_SIZE))
+);
 
-const fromNumber = value => {
-  ui8a[0] = value[0];
-  ui8a[1] = value[1];
-  ui8a[2] = value[2];
-  ui8a[3] = value[3];
-  return dv.getUint32(0, true);
-};
+const fromString = (value, i, length = fromNumber(value, i)) =>
+  decoder.decode(value.subarray(i + INT_SIZE, i + INT_SIZE + length));
 
-const fromString = value => {
-  const length = fromNumber(value);
-  return decoder.decode(value.subarray(4, 4 + length));
-};
-
-const lengthAndName = value => {
-  const length = fromNumber(value);
-  const name = fromString(value, length);
-  return [length, name];
+const lengthAndName = (value, i) => {
+  const length = fromNumber(value, i);
+  return [length, fromString(value, i, length)];
 };
 
 const resolve = (FS, path, ui8a, i) => {
-  const mode = fromNumber(ui8a.subarray(i, i + 4));
-  i += 4;
+  const mode = fromNumber(ui8a, i);
+  i += INT_SIZE;
 
   // TODO: do we actually need this?
-  const mtime = fromDate(ui8a.subarray(i, i + 24));
-  i += 24;
+  const mtime = USE_MTIME ? fromDate(ui8a, i) : null;
+  i += DATE_SIZE;
 
-  const [length, name] = lengthAndName(ui8a.subarray(i));
-  i += 4 + length;
+  const [length, name] = lengthAndName(ui8a, i);
+  i += INT_SIZE + length;
 
   const fn = path + '/' + name;
 
@@ -44,15 +36,15 @@ const resolve = (FS, path, ui8a, i) => {
       // if the directory already exists, just ignore.
       try { FS.mkdir(fn) } catch {}
   
-      let entries = fromNumber(ui8a.subarray(i, i + 4));
-      i += 4;
+      let entries = fromNumber(ui8a, i);
+      i += INT_SIZE;
 
       while (entries--) i = resolve(FS, fn, ui8a, i);
       break;
     }
     case FILE: {
-      const size = fromNumber(ui8a.subarray(i, i + 4));
-      i += 4;
+      const size = fromNumber(ui8a, i);
+      i += INT_SIZE;
 
       const data = ui8a.subarray(i, i + size);
       i += size;
@@ -62,9 +54,9 @@ const resolve = (FS, path, ui8a, i) => {
       break;
     }
     case LINK: {
-      const [length, name] = lengthAndName(ui8a.subarray(i));
+      const [length, name] = lengthAndName(ui8a, i);
       console.log('LNK', name, path);
-      i += 4 + length;
+      i += INT_SIZE + length;
 
       FS.symlink(name, fn);
       break;

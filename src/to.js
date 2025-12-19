@@ -1,4 +1,4 @@
-import { DIR, FILE, LINK, NUL, dv, type, ui8a } from './shared.js';
+import { DIR, FILE, LINK, NUL, INT_SIZE, type, toNumber } from './shared.js';
 
 const encoder = new TextEncoder;
 
@@ -19,17 +19,12 @@ const toDate = value => {
   return Uint8Array.from(iso, c => c.charCodeAt(0));
 };
 
-const toNumber = value => {
-  dv.setUint32(0, value, true);
-  return ui8a.slice(0, 4);
-};
-
 const toString = value => {
   const encoded = encoder.encode(value);
   const l = encoded.length;
-  const view = new Uint8Array(l + 4);
+  const view = new Uint8Array(l + INT_SIZE);
   view.set(toNumber(l), 0);
-  view.set(encoded, 4);
+  view.set(encoded, INT_SIZE);
   return view;
 };
 

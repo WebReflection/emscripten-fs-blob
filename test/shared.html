@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module">
+    import { toNumber, fromNumber } from '../src/shared.js';
+
+    const value = 1234567890;
+
+    if (fromNumber(toNumber(value), 0) === value)
+      document.body.append('OK');
+    else
+      document.body.append('NOT OK');
+  </script>
+</head>
+</html>
