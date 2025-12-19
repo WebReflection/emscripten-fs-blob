@@ -37,6 +37,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "build": "npm run types",
     "types": "rm -rf types && tsc --allowJs --checkJs --lib dom,esnext --moduleResolution nodenext --module NodeNext --target esnext -d --emitDeclarationOnly --outDir ./types ./src/*.js"
   },
   "repository": {

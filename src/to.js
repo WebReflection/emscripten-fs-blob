@@ -46,15 +46,26 @@ const toString = value => {
 };
 
 /**
+ * @param {string[]} entries
+ * @param {string[]} exclude
+ * @returns
+ */
+const options = (entries, exclude) => ({ entries, exclude });
+
+/**
  * @param {import('./shared.js').EmscriptenFS} FS
  * @param {string} path
- * @param {string[]} [entries]
+ * @param {{entries?: string[], exclude?: string[]}} [options]
  * @returns {Blob}
  */
-const toBlob = (FS, path, entries = getEntries(FS, path)) => {
+const toBlob = (FS, path, {
+  entries = getEntries(FS, path),
+  exclude = []
+} = options(getEntries(FS, path), [])) => {
   const result = [];
   for (const entry of entries) {
     const fullPath = path === '/' ? '/' + entry : path + '/' + entry;
+    if (exclude.some(ignore, fullPath)) continue;
     try {
       const { mode, mtime } = FS.stat(fullPath);
       switch (type(FS, mode)) {
@@ -68,7 +79,7 @@ const toBlob = (FS, path, entries = getEntries(FS, path)) => {
           );
 
           if (subEntries.length > 0)
-            result.push(toBlob(FS, fullPath, subEntries));
+            result.push(toBlob(FS, fullPath, options(subEntries, exclude)));
           break;
         }
         case FILE: {
@@ -104,3 +115,12 @@ const toBlob = (FS, path, entries = getEntries(FS, path)) => {
 };
 
 export default toBlob;
+
+/**
+ * @param {string|RegExp} exclusion
+ * @returns {boolean}
+ */
+function ignore(exclusion) {
+  'use strict';
+  return typeof exclusion === 'string' ? (this === exclusion) : exclusion.test(this);
+}
