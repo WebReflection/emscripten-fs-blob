@@ -55,7 +55,6 @@ const resolve = (FS, path, ui8a, i) => {
     }
     case LINK: {
       const [length, name] = lengthAndName(ui8a, i);
-      console.log('LNK', name, path);
       i += INT_SIZE + length;
 
       FS.symlink(name, fn);
