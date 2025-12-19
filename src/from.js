@@ -1,23 +1,45 @@
-import { DIR, FILE, LINK, INT_SIZE, type, fromNumber } from './shared.js';
+// @ts-check
 
-const DATE_SIZE = 24; // (new Date()).toISOString().length;
-const USE_MTIME = false;
+import { DIR, FILE, LINK, INT_SIZE, DATE_SIZE, USE_MTIME, type, fromNumber } from './shared.js';
 
 const { fromCharCode } = String;
 const decoder = new TextDecoder;
 
+/**
+ * @param {Uint8Array<ArrayBuffer>} value
+ * @param {number} i
+ * @returns {Date}
+ */
 const fromDate = (value, i) => new Date(
   fromCharCode.apply(null, value.subarray(i, i + DATE_SIZE))
 );
 
+/**
+ * @param {Uint8Array<ArrayBuffer>} value
+ * @param {number} i
+ * @param {number} [length]
+ * @returns {string}
+ */
 const fromString = (value, i, length = fromNumber(value, i)) =>
   decoder.decode(value.subarray(i + INT_SIZE, i + INT_SIZE + length));
 
+/**
+ * @param {Uint8Array<ArrayBuffer>} value
+ * @param {number} i
+ * @returns {[number, string]}
+ */
 const lengthAndName = (value, i) => {
   const length = fromNumber(value, i);
   return [length, fromString(value, i, length)];
 };
 
+/**
+ * @param {import('./shared.js').EmscriptenFS} FS
+ * @param {string} path
+ * @param {Uint8Array<ArrayBuffer>} ui8a
+ * @param {number} i
+ * @returns {number}
+ */
 const resolve = (FS, path, ui8a, i) => {
   const mode = fromNumber(ui8a, i);
   i += INT_SIZE;
@@ -65,6 +87,12 @@ const resolve = (FS, path, ui8a, i) => {
   return i;
 };
 
+/**
+ * @param {import('./shared.js').EmscriptenFS} FS
+ * @param {string} path
+ * @param {Blob} blob
+ * @returns {Promise<void>}
+ */
 export default async (FS, path, blob) => {
   const ui8a = new Uint8Array(await blob.arrayBuffer());
   const length = ui8a.length;

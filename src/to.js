@@ -1,7 +1,14 @@
-import { DIR, FILE, LINK, NUL, INT_SIZE, type, toNumber } from './shared.js';
+// @ts-check
+
+import { DIR, FILE, LINK, NUL, INT_SIZE, DATE_SIZE, USE_MTIME, type, toNumber } from './shared.js';
 
 const encoder = new TextEncoder;
 
+/**
+ * @param {import('./shared.js').EmscriptenFS} FS
+ * @param {string} path
+ * @returns {string[]}
+ */
 const getEntries = (FS, path) => {
   return FS.readdir(path).filter(entry => {
     if (entry !== '.' && entry !== '..') {
@@ -14,11 +21,21 @@ const getEntries = (FS, path) => {
   });
 };
 
+/**
+ * @param {Date} value
+ * @returns {Uint8Array<ArrayBuffer>}
+ */
 const toDate = value => {
   const iso = value.toISOString();
-  return Uint8Array.from(iso, c => c.charCodeAt(0));
+  const view = new Uint8Array(DATE_SIZE);
+  if (USE_MTIME) for (let i = 0; i < DATE_SIZE; i++) view[i] = iso.charCodeAt(i);
+  return view;
 };
 
+/**
+ * @param {string} value 
+ * @returns {Uint8Array<ArrayBuffer>}
+ */
 const toString = value => {
   const encoded = encoder.encode(value);
   const l = encoded.length;
@@ -28,6 +45,12 @@ const toString = value => {
   return view;
 };
 
+/**
+ * @param {import('./shared.js').EmscriptenFS} FS
+ * @param {string} path
+ * @param {string[]} [entries]
+ * @returns {Blob}
+ */
 const toBlob = (FS, path, entries = getEntries(FS, path)) => {
   const result = [];
   for (const entry of entries) {

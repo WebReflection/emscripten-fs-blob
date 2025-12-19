@@ -4,13 +4,25 @@
   "description": "Emscripten FS as sharable and recoverable Blob",
   "main": "src/index.js",
   "module": "src/index.js",
+  "types": "types/index.d.ts",
   "exports": {
-    ".": "./src/index.js",
-    "./from": "./src/from.js",
-    "./to": "./src/to.js"
+    ".": {
+      "import": "./src/index.js",
+      "types": "./types/index.d.ts"
+    },
+    "./from": {
+      "import": "./src/from.js",
+      "types": "./types/from.d.ts"
+    },
+    "./to": {
+      "import": "./src/to.js",
+      "types": "./types/to.d.ts"
+    },
+    "package.json": "./package.json"
   },
   "files": [
     "src/",
+    "types/",
     "LICENSE",
     "README.md"
   ],
@@ -25,7 +37,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "types": "rm -rf types && tsc --allowJs --checkJs --lib dom,esnext --moduleResolution nodenext --module NodeNext --target esnext -d --emitDeclarationOnly --outDir ./types ./src/*.js"
   },
   "repository": {
     "type": "git",
@@ -34,5 +46,8 @@
   "bugs": {
     "url": "https://github.com/WebReflection/emscripten-fs-blob/issues"
   },
-  "homepage": "https://github.com/WebReflection/emscripten-fs-blob#readme"
+  "homepage": "https://github.com/WebReflection/emscripten-fs-blob#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }
